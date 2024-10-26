@@ -1,7 +1,10 @@
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import Papa from 'papaparse';
 
-export default function Home() {
+export default dynamic(() => Promise.resolve(Home), { ssr: false });
+
+function Home() {
     const [file, setFile] = useState(null);
     const [downloadLink, setDownloadLink] = useState(null);
 
