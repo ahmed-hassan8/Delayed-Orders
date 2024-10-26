@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Papa from 'papaparse';
 
 export default function Home() {
     const [file, setFile] = useState(null);
@@ -9,20 +10,31 @@ export default function Home() {
     };
 
     const handleAnalyze = async () => {
-        const formData = new FormData();
-        formData.append('file', file);
+        if (!file) return alert("Please upload a CSV file");
 
-        const res = await fetch('/api/analyze', {
-            method: 'POST',
-            body: formData,
+        // Parse CSV file
+        Papa.parse(file, {
+            header: true,
+            complete: async (result) => {
+                const csvData = result.data;
+
+                // Send CSV data to serverless function
+                const res = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(csvData),
+                });
+
+                if (res.ok) {
+                    const { downloadUrl } = await res.json();
+                    setDownloadLink(downloadUrl);
+                } else {
+                    alert("Failed to process file");
+                }
+            },
         });
-
-        if (res.ok) {
-            const { downloadUrl } = await res.json();
-            setDownloadLink(downloadUrl);
-        } else {
-            alert("Failed to process file");
-        }
     };
 
     return (
