@@ -1,36 +1,23 @@
-import formidable from 'formidable';
-import fs from 'fs';
-import { exec } from 'child_process';
-import path from 'path';
-
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        const form = new formidable.IncomingForm();
-        form.parse(req, (err, fields, files) => {
-            if (err) {
-                res.status(500).json({ error: 'File parsing failed' });
-                return;
-            }
+        try {
+            const data = req.body;
 
-            const csvFilePath = files.file.filepath;
-            const outputPath = path.join(process.cwd(), 'public', 'downloads', 'report.csv');
+            // Sample logic to filter delayed orders (adjust as needed)
+            const delayedOrders = data.filter((order) => order.Status === 'Delayed');
 
-            exec(`python3 scripts/analyze.py ${csvFilePath} ${outputPath}`, (error) => {
-                if (error) {
-                    res.status(500).json({ error: 'Data processing failed' });
-                    return;
-                }
+            // Convert to CSV format (simple manual conversion here; libraries can help for complex cases)
+            const csvContent = delayedOrders
+                .map((order) => Object.values(order).join(","))
+                .join("\n");
 
-                const downloadUrl = `/downloads/report.csv`;
-                res.status(200).json({ downloadUrl });
-            });
-        });
+            // Respond with the CSV as a downloadable file link
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="report.csv"');
+            res.status(200).send(csvContent);
+        } catch (error) {
+            res.status(500).json({ error: 'Data processing failed' });
+        }
     } else {
         res.status(405).json({ error: 'Method not allowed' });
     }
